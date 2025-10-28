@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Core\Autoloader;
-use App\Core\Router;
+use App\Autoloader;
+use App\Router;
 
 require __DIR__.'/../vendor/autoload.php';
 
-require_once __DIR__.'/../src/Core/Autoloader.php';
+require_once __DIR__.'/../src/Autoloader.php';
 
 Autoloader::register();
 
