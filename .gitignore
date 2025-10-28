@@ -1,2 +1,5 @@
 /vendor
 /docker
+/.idea
+.env
+.env.local

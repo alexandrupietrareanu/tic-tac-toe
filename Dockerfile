@@ -1,23 +1,41 @@
-FROM php:8.4-cli
+# Use official PHP-FPM image for PHP 8.4
+FROM php:8.4-fpm
 
-# Install system dependencies and Composer
+# install dependencies
 RUN apt-get update && apt-get install -y \
-    git unzip curl \
-    && rm -rf /var/lib/apt/lists/*
+    git \
+    unzip \
+    curl \
+    libzip-dev \
+    libonig-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    && docker-php-ext-configure zip \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip gd
 
-# Install Composer
+# Install Xdebug via PECL
+RUN pecl install xdebug \
+    && docker-php-ext-enable xdebug
+
+# Install Composer (copy from official composer image)
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Set working directory
-WORKDIR /app
+WORKDIR /var/www/html
 
-# Copy project files
-COPY . /app
+# Copy php config files
+COPY docker/php.ini /usr/local/etc/php/conf.d/99-php.ini
+COPY docker/xdebug.ini /usr/local/etc/php/conf.d/20-xdebug.ini
 
-# Optional: custom php.ini
-COPY docker/php.ini /usr/local/etc/php/conf.d/php.ini
+# Copy application files
+COPY . /var/www/html
 
-# Install dependencies
-RUN composer install
+# Ensure web user owns files (optional)
+RUN chown -R www-data:www-data /var/www/html
 
-CMD ["php", "-S", "0.0.0.0:8000", "index.php"]
+# Expose FPM port (internal)
+EXPOSE 9000
+
+# Default command — php-fpm
+CMD ["php-fpm"]
