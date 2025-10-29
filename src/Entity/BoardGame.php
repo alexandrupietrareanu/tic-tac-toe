@@ -4,40 +4,46 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\GameValueEnum;
+
 class BoardGame
 {
-    /** @var array<BoardGameMove> */
-    private array $boardGameMoves;
+    private Game $game;
 
     /**
-     * @return array<BoardGameMove>
+     * @var array<array<int, null|GameValueEnum|int>>
      */
-    public function getBoardGameMoves(): array
+    private array $matrix;
+
+    public function getGame(): Game
     {
-        return $this->boardGameMoves;
+        return $this->game;
     }
 
-    public function addBoardGameMove(BoardGameMove $boardGameMove): self
+    public function setGame(Game $game): self
     {
-        if (!\in_array($boardGameMove, $this->boardGameMoves, true)) {
-            $this->boardGameMoves[] = $boardGameMove;
+        $this->game = $game;
+
+        if ($game->getBoardGame() !== $this) {
+            $game->setBoardGame($this);
         }
 
         return $this;
     }
 
-    public function removeBookmarkDepartment(BoardGameMove $boardGameMove): self
+    /**
+     * @return array<array<int, null|GameValueEnum|int>>
+     */
+    public function getMatrix(): array
     {
-        unset($this->boardGameMoves[array_search($boardGameMove, $this->boardGameMoves, true)]);
-
-        return $this;
+        return $this->matrix;
     }
 
-    /**
-     * @param array<BoardGameMove> $boardGameMoves
-     */
-    public function setBoardGameMoves(array $boardGameMoves): void
+    public function updateMatrix(int $i, int $j, GameValueEnum $valueEnum): void
     {
-        $this->boardGameMoves = $boardGameMoves;
+        if (!$this->matrix[$i][$j]) {
+            echo \sprintf('Already set matrix on position %s:%s', $i, $j);
+        }
+        $this->matrix[$i][$j] = $valueEnum;
     }
 }

@@ -13,6 +13,7 @@ class Game
     public function __construct(
         private readonly Player $playerA,
         private readonly Player $playerB,
+        private int $limit,
     ) {}
 
     public function getPlayerA(): Player
@@ -40,8 +41,24 @@ class Game
         return $this->boardGame;
     }
 
-    public function setBoardGame(BoardGame $boardGame): void
+    public function setBoardGame(BoardGame $boardGame): self
     {
         $this->boardGame = $boardGame;
+
+        if ($boardGame->getGame() !== $this) {
+            $boardGame->setGame($this);
+        }
+
+        return $this;
+    }
+
+    public function getLimit(): int
+    {
+        return $this->limit;
+    }
+
+    public function setLimit(int $limit): void
+    {
+        $this->limit = $limit;
     }
 }
