@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-readonly class Game
+class Game
 {
+    private ?Player $winner = null;
+
+    private BoardGame $boardGame;
+
     public function __construct(
-        private Player $playerA,
-        private Player $playerB,
+        private readonly Player $playerA,
+        private readonly Player $playerB,
     ) {}
 
     public function getPlayerA(): Player
@@ -19,5 +23,25 @@ readonly class Game
     public function getPlayerB(): Player
     {
         return $this->playerB;
+    }
+
+    public function getWinner(): ?Player
+    {
+        return $this->winner;
+    }
+
+    public function setWinner(?Player $winner): void
+    {
+        $this->winner = $winner;
+    }
+
+    public function getBoardGame(): BoardGame
+    {
+        return $this->boardGame;
+    }
+
+    public function setBoardGame(BoardGame $boardGame): void
+    {
+        $this->boardGame = $boardGame;
     }
 }
