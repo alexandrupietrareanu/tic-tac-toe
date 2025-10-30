@@ -8,22 +8,40 @@ use App\Controller\ControllerInterface;
 
 class Router
 {
-    /**
-     * @throws \Exception
-     */
+    private array $routes = [];
+
+    public function get(string $path, array $handler): void
+    {
+        $this->routes['GET'][$path] = $handler;
+    }
+
+    public function post(string $path, array $handler): void
+    {
+        $this->routes['POST'][$path] = $handler;
+    }
+
     public function dispatch(string $path): void
     {
-        // Remove trailing slash & sanitize
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         $path = trim($path, '/');
-        $segments = '' === $path ? [] : explode('/', $path);
 
-        // Default route
+        if (isset($this->routes[$method][$path])) {
+            [$controllerClass, $controllerMethod] = $this->routes[$method][$path];
+
+            /** @var ControllerInterface $controller */
+            $controller = $this->resolve($controllerClass);
+            \call_user_func([$controller, $controllerMethod]);
+
+            return;
+        }
+
+        // Fallback: old behavior
+        $segments = '' === $path ? [] : explode('/', $path);
         $controllerName = $segments[0] ?? 'home';
-        $method = $segments[1] ?? 'index';
-        $params = \array_slice($segments, 2); // URL parameters after method
+        $methodName = $segments[1] ?? 'index';
+        $params = \array_slice($segments, 2);
 
         $controllerClass = 'App\Controller\\'.ucfirst($controllerName).'Controller';
-
         if (!class_exists($controllerClass)) {
             http_response_code(404);
             echo "Controller '{$controllerClass}' not found";
@@ -33,24 +51,18 @@ class Router
 
         /** @var ControllerInterface $controller */
         $controller = $this->resolve($controllerClass);
-
-        if (!method_exists($controller, $method)) {
+        if (!method_exists($controller, $methodName)) {
             http_response_code(404);
-            echo "Method '{$method}' not found in controller '{$controllerClass}'";
+            echo "Method '{$methodName}' not found in controller '{$controllerClass}'";
 
             return;
         }
 
-        // Static analysis now knows this is a callable
-        $callable = [$controller, $method];
-        \assert(\is_callable($callable));
-
-        \call_user_func_array($callable, $params);
+        \call_user_func_array([$controller, $methodName], $params);
     }
 
     private function resolve(string $class): object
     {
-        /** @var class-string $class */
         $reflection = new \ReflectionClass($class);
         $constructor = $reflection->getConstructor();
 
@@ -61,16 +73,13 @@ class Router
         $dependencies = array_map(function (\ReflectionParameter $param) {
             $type = $param->getType();
             if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
-                $depClass = $type->getName();
-
-                return $this->resolve($depClass);
+                return $this->resolve($type->getName());
             }
-
             if ($param->isDefaultValueAvailable()) {
                 return $param->getDefaultValue();
             }
 
-            throw new \Exception("Cannot resolve parameter '{$param->getName()}' for {$param->getDeclaringClass()?->getName()}");
+            throw new \Exception("Cannot resolve {$param->getName()} for {$param->getDeclaringClass()?->getName()}");
         }, $constructor->getParameters());
 
         return $reflection->newInstanceArgs($dependencies);

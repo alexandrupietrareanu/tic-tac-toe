@@ -8,10 +8,10 @@ use App\Enum\GameValueEnum;
 
 class Player
 {
-    public function __construct(
-        private GameValueEnum $type,
-        private string $name,
-    ) {}
+    private GameValueEnum $type;
+    private string $name;
+
+    public function __construct() {}
 
     public function __toString(): string
     {
@@ -23,13 +23,22 @@ class Player
         return $this->name;
     }
 
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+
+        return $this;
+    }
+
     public function getType(): GameValueEnum
     {
         return $this->type;
     }
 
-    public function setType(GameValueEnum $type): void
+    public function setType(GameValueEnum $type): self
     {
         $this->type = $type;
+
+        return $this;
     }
 }

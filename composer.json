@@ -3,7 +3,8 @@
   "description": "Tic tac toe version.",
   "type": "project",
   "require": {
-    "php": "^8.4"
+    "php": "^8.4",
+    "twig/twig": "^3.22"
   },
   "autoload": {
     "psr-4": {

@@ -8,27 +8,25 @@ use App\Enum\GameValueEnum;
 
 class BoardGame
 {
-    private Game $game;
+    private static $instance;
 
     /**
      * @var array<array<int, null|GameValueEnum|int>>
      */
     private array $matrix;
 
-    public function getGame(): Game
+    private function __construct()
     {
-        return $this->game;
+        $this->matrix = [];
     }
 
-    public function setGame(Game $game): self
+    public static function getInstance()
     {
-        $this->game = $game;
-
-        if ($game->getBoardGame() !== $this) {
-            $game->setBoardGame($this);
+        if (!isset(self::$instance)) {
+            self::$instance = new self();
         }
 
-        return $this;
+        return self::$instance;
     }
 
     /**
@@ -41,7 +39,7 @@ class BoardGame
 
     public function updateMatrix(int $i, int $j, GameValueEnum $valueEnum): void
     {
-        if (!$this->matrix[$i][$j]) {
+        if (isset($this->matrix[$i][$j]) && !empty($this->matrix[$i][$j])) {
             echo \sprintf('Already set matrix on position %s:%s', $i, $j);
         }
         $this->matrix[$i][$j] = $valueEnum;

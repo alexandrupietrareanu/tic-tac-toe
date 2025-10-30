@@ -11,47 +11,31 @@ use App\Enum\GameValueEnum;
 
 class GameService
 {
-    public function play(Player $playerA, Player $playerB): void
+    public function startGame(string $xName, string $oName, int $gameLimit): Game
     {
-        $game = new Game($playerA, $playerB, 3);
-        $boardGame = new BoardGame();
-        $game->setBoardGame($boardGame);
+        $playerX = $this->createPlayer($xName, GameValueEnum::X);
+        echo \sprintf('%s is using the %s symbol;  ', $playerX->getName(), GameValueEnum::X->value);
 
-        $gameLimit = $game->getLimit();
+        $playerO = $this->createPlayer($oName, GameValueEnum::O);
+        echo \sprintf('%s is using the %s symbol;   ', $playerO->getName(), GameValueEnum::O->value);
 
-        for ($move = 1; $move <= $gameLimit * $gameLimit; ++$move) {
-            $length = rand(1, 4);
-            $width = rand(1, 4);
+        $game = $this->setUpGame($playerX, $playerO, $gameLimit);
+        echo \sprintf('The game starts now! The matrix limit is %s;   ', $gameLimit);
 
-            if (0 === $move % 2) {
-                $this->move($boardGame, $length, $width, $playerA);
-            } else {
-                $this->move($boardGame, $length, $width, $playerB);
-            }
-
-            if (null !== $winner = $this->getWinner($boardGame)) {
-                $game->setWinner($winner);
-
-                break;
-            }
-        }
-
-        if (null === $game->getWinner()) {
-            echo 'No winner';
-        }
-
-        echo \sprintf("The winner is %s\n", $game->getWinner());
+        return $game;
     }
 
-    public function move(BoardGame $boardGame, int $length, int $width, Player $player): void
+    public function move(int $length, int $width, Player $player): void
     {
+        $boardGame = BoardGame::getInstance();
+        echo \sprintf("Player %s move is %s:%s\n", $player->getType()->value, $length, $width);
         $boardGame->updateMatrix($length, $width, $player->getType());
     }
 
-    public function getWinner(BoardGame $boardGame): ?Player
+    public function getWinner(): ?Player
     {
-        $game = $boardGame->getGame();
-        $type = $this->getTypeWinner($boardGame);
+        $game = Game::getInstance();
+        $type = $this->getTypeWinner();
 
         if ($game->getPlayerA()->getType() === $type) {
             return $game->getPlayerA();
@@ -63,10 +47,67 @@ class GameService
         return null;
     }
 
-    private function getTypeWinner(BoardGame $boardGame): ?GameValueEnum
+    protected function playGame(): void
     {
-        for ($i = 1; $i <= $boardGame->getGame()->getLimit(); ++$i) {
-            if (null !== $typeWinner = $this->getMatrixWinner($boardGame->getGame(), $i)) {
+        $move = 0;
+        $game = Game::getInstance();
+        $gameLimit = $game->getLimit();
+
+        while (null === $game->getWinner()) {
+            ++$move;
+            $length = rand(1, $gameLimit);
+            $width = rand(1, $gameLimit);
+
+            if (0 === $move % 2) {
+                $this->move($length, $width, $game->getPlayerA());
+            } else {
+                $this->move($length, $width, $game->getPlayerB());
+            }
+
+            if (null !== $winner = $this->getWinner()) {
+                $game->setWinner($winner);
+
+                break;
+            }
+        }
+
+        if (null === $game->getWinner()) {
+            echo 'No winner;';
+
+            return;
+        }
+
+        echo \sprintf("The winner is %s\n", $game->getWinner());
+    }
+
+    private function createPlayer(string $name, GameValueEnum $type): Player
+    {
+        $player = new Player();
+        $player->setName($name)
+            ->setType($type)
+        ;
+
+        return $player;
+    }
+
+    private function setUpGame(Player $playerX, Player $playerO, int $gameLimit): Game
+    {
+        $game = Game::getInstance();
+        $game->setPlayerA($playerX)
+            ->setPlayerB($playerO)
+            ->setLimit($gameLimit)
+            ->setName('Tic Tac Toe')
+        ;
+
+        return $game;
+    }
+
+    private function getTypeWinner(): ?GameValueEnum
+    {
+        $game = Game::getInstance();
+
+        for ($i = 1; $i <= $game->getLimit(); ++$i) {
+            if (null !== $typeWinner = $this->getMatrixWinner($game, $i)) {
                 return $typeWinner;
             }
         }
@@ -80,21 +121,29 @@ class GameService
         $isColumnWinner = true;
         $isDiagonalWinner = true;
         $type = null;
-        $matrix = $game->getBoardGame()->getMatrix();
 
-        $valueLine = $matrix[$index][1];
-        $valueColumn = $matrix[1][$index];
+        $boardGame = BoardGame::getInstance();
+        $matrix = $boardGame->getMatrix();
+
+        $fvColumn = $matrix[$index][1] ?? '';
+        $fvLine = $matrix[1][$index] ?? '';
+        $fvDiagonal = $matrix[1][1] ?? '';
 
         for ($i = 1; $i <= $game->getLimit(); ++$i) {
-            if ($valueLine !== $matrix[$index][$i]) {
-                $isLineWinner = false;
-            }
-
-            if ($valueColumn !== $matrix[$i][$index]) {
+            $cValue = $matrix[$index][$i] ?? '';
+            if (!$cValue || $fvColumn !== $cValue) {
                 $isColumnWinner = false;
             }
 
-            if ($i + 1 <= $game->getLimit() && $matrix[$i][$i] !== $matrix[$i + 1][$i + 1]) {
+            $lValue = $matrix[$i][$index] ?? '';
+            if (!$lValue || $fvLine !== $lValue) {
+                $isLineWinner = false;
+            }
+
+            $dValue = $matrix[$i][$i] ?? '';
+            $dNextValue = $matrix[$i + 1][$i + 1] ?? '';
+
+            if (!$dValue || ($i + 1 <= $game->getLimit() && $dValue !== $dNextValue)) {
                 $isDiagonalWinner = false;
             }
         }
@@ -104,15 +153,15 @@ class GameService
         }
 
         if ($isLineWinner) {
-            $type = $matrix[$index][$i];
+            $type = $fvLine;
         }
 
         if ($isColumnWinner) {
-            $type = $matrix[$i][$index];
+            $type = $fvColumn;
         }
 
         if ($isDiagonalWinner) {
-            $type = $matrix[$index][$index];
+            $type = $fvDiagonal;
         }
 
         if ($type instanceof GameValueEnum) {
