@@ -11,23 +11,31 @@ use App\Enum\GameValueEnum;
 
 class GameService
 {
-    public function startGame(string $xName, string $oName, int $gameLimit): Game
+    public function startGame(Game $game, string $xName, string $oName, int $gameLimit): void
     {
-        $playerX = $this->createPlayer($xName, GameValueEnum::X);
-        echo \sprintf('%s is using the %s symbol;  ', $playerX->getName(), GameValueEnum::X->value);
+        $playerA = $this->createPlayer($xName, GameValueEnum::X);
+        echo \sprintf('%s is using the %s symbol;  ', $playerA->getName(), GameValueEnum::X->value);
 
-        $playerO = $this->createPlayer($oName, GameValueEnum::O);
-        echo \sprintf('%s is using the %s symbol;   ', $playerO->getName(), GameValueEnum::O->value);
+        $playerB = $this->createPlayer($oName, GameValueEnum::O);
+        echo \sprintf('%s is using the %s symbol;   ', $playerB->getName(), GameValueEnum::O->value);
 
-        $game = $this->setUpGame($playerX, $playerO, $gameLimit);
+        $this->setUpGame($game, $playerA, $playerB, $gameLimit);
         echo \sprintf('The game starts now! The matrix limit is %s;   ', $gameLimit);
-
-        return $game;
     }
 
-    public function move(int $length, int $width, Player $player): void
+    public function move(int $length, int $width, string $sign): void
     {
         $boardGame = BoardGame::getInstance();
+
+        $game = Game::getInstance();
+        $type = GameValueEnum::from($sign);
+
+        if ($game->getPlayerA()->getType() === $type) {
+            $player = $game->getPlayerA();
+        } else {
+            $player = $game->getPlayerB();
+        }
+
         echo \sprintf("Player %s move is %s:%s\n", $player->getType()->value, $length, $width);
         $boardGame->updateMatrix($length, $width, $player->getType());
     }
@@ -51,17 +59,18 @@ class GameService
     {
         $move = 0;
         $game = Game::getInstance();
-        $gameLimit = $game->getLimit();
 
         while (null === $game->getWinner()) {
             ++$move;
-            $length = rand(1, $gameLimit);
-            $width = rand(1, $gameLimit);
+            $length = rand(1, $game->getLimit());
+            $width = rand(1, $game->getLimit());
+            $playerA = $game->getPlayerA();
+            $playerB = $game->getPlayerB();
 
             if (0 === $move % 2) {
-                $this->move($length, $width, $game->getPlayerA());
+                $this->move($length, $width, $playerA->getType()->value);
             } else {
-                $this->move($length, $width, $game->getPlayerB());
+                $this->move($length, $width, $playerB->getType()->value);
             }
 
             if (null !== $winner = $this->getWinner()) {
@@ -90,16 +99,13 @@ class GameService
         return $player;
     }
 
-    private function setUpGame(Player $playerX, Player $playerO, int $gameLimit): Game
+    private function setUpGame(Game $game, Player $playerX, Player $playerO, int $gameLimit): void
     {
-        $game = Game::getInstance();
         $game->setPlayerA($playerX)
             ->setPlayerB($playerO)
             ->setLimit($gameLimit)
             ->setName('Tic Tac Toe')
         ;
-
-        return $game;
     }
 
     private function getTypeWinner(): ?GameValueEnum
@@ -123,6 +129,7 @@ class GameService
         $type = null;
 
         $boardGame = BoardGame::getInstance();
+
         $matrix = $boardGame->getMatrix();
 
         $fvColumn = $matrix[$index][1] ?? '';

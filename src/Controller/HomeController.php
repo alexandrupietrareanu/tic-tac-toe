@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Core\View;
+use App\Entity\BoardGame;
 use App\Entity\Game;
-use App\Enum\GameValueEnum;
 use App\Service\GameService;
 
 class HomeController implements ControllerInterface
@@ -17,7 +17,10 @@ class HomeController implements ControllerInterface
 
     public function index(): void
     {
-        $game = $this->gameService->startGame('Player A', 'Player B', 3);
+        $game = Game::getInstance();
+        $this->gameService->startGame($game, 'Player A', 'Player B', $_SESSION['limit']);
+        $boardGame = BoardGame::getInstance();
+        $boardGame->resetMatrix();
 
         View::render('home', [
             'game' => $game,
@@ -26,10 +29,10 @@ class HomeController implements ControllerInterface
 
     public function move(): void
     {
-        $request = json_decode(file_get_contents('php://input'), true);
+        $request = json_decode((string) file_get_contents('php://input'), true);
 
-        $row = $request['row'] + 1 ?? null;
-        $col = $request['col'] + 1 ?? null;
+        $row = $request['row'] ?? null;
+        $col = $request['col'] ?? null;
         $sign = $request['player'] ?? null;
 
         if (null === $row || null === $col || !$sign) {
@@ -40,13 +43,13 @@ class HomeController implements ControllerInterface
         }
 
         $game = Game::getInstance();
-        $game->setLimit(3);
-        $type = GameValueEnum::from($sign);
+        $this->gameService->move($row, $col, $sign);
 
-        if ($game->getPlayerA()->getType() === $type) {
-            $player = $game->getPlayerA();
-        } else {
-            $player = $game->getPlayerB();
+        if (null !== $winner = $this->gameService->getWinner()) {
+            $game->setWinner($winner);
+            echo 'Winner: '.$winner->getName();
+
+            return;
         }
 
         $result = [
@@ -55,13 +58,6 @@ class HomeController implements ControllerInterface
             'player' => $sign,
             'gameName' => $game->getName(),
         ];
-
-        $this->gameService->move($row, $col, $player);
-
-        if (null !== $winner = $this->gameService->getWinner()) {
-            $game->setWinner($winner);
-            echo 'Winner: '.$winner->getName();
-        }
 
         echo json_encode($result);
     }

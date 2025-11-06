@@ -8,7 +8,7 @@ use App\Enum\GameValueEnum;
 
 class Game
 {
-    private static $instance;
+    private static self $instance;
     private ?Player $winner = null;
 
     private Player $playerA;
@@ -26,7 +26,6 @@ class Game
         $this->playerA->setType(GameValueEnum::X);
         $this->playerB = new Player();
         $this->playerB->setType(GameValueEnum::O);
-        // Private constructor to prevent instantiation outside the class
     }
 
     public function __toString(): string
@@ -34,10 +33,22 @@ class Game
         return $this->name;
     }
 
-    public static function getInstance()
+    public static function getInstance(): self
     {
         if (!isset(self::$instance)) {
             self::$instance = new self();
+        }
+
+        if (isset($_SESSION['limit'])) {
+            self::$instance->setLimit($_SESSION['limit']);
+        }
+
+        if (isset($_SESSION['playerA'])) {
+            self::$instance->setPlayerA($_SESSION['playerA']);
+        }
+
+        if (isset($_SESSION['playerB'])) {
+            self::$instance->setPlayerB($_SESSION['playerB']);
         }
 
         return self::$instance;
@@ -51,6 +62,7 @@ class Game
     public function setPlayerA(Player $playerA): self
     {
         $this->playerA = $playerA;
+        $_SESSION['playerA'] = $playerA;
 
         return $this;
     }
@@ -63,6 +75,7 @@ class Game
     public function setPlayerB(Player $playerB): self
     {
         $this->playerB = $playerB;
+        $_SESSION['playerB'] = $playerB;
 
         return $this;
     }

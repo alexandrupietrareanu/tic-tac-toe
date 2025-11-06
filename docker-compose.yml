@@ -8,6 +8,7 @@ services:
     container_name: php-app
     volumes:
       - ./:/var/www/html
+      - ./docker/sessions:/var/lib/php/sessions
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

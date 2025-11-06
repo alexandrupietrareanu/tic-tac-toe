@@ -11,13 +11,16 @@ class View
 {
     private static ?Environment $twig = null;
 
-    public static function render(string $template, array $data = [])
+    /**
+     * @param array<mixed> $data
+     */
+    public static function render(string $template, array $data = []): void
     {
         self::init();
-        echo self::$twig->render('@view/'.$template.'.twig', $data);
+        echo self::$twig?->render('@view/'.$template.'.twig', $data);
     }
 
-    private static function init()
+    private static function init(): void
     {
         if (null === self::$twig) {
             $loader = new FilesystemLoader();

@@ -54,8 +54,8 @@
                 cell.textContent = current;
 
                 // Calculate row and column
-                const row = Math.floor(index / limit);
-                const col = index % limit;
+                const row = Math.floor(index / limit) + 1;
+                const col = index % limit + 1;
 
                 // Send move to backend
                 fetch('/move', {
